@@ -700,3 +700,26 @@
          ret# ~expr]
      (prn (str "Elapsed time: " (- (.getTime (js/Date.) ()) start#) " msecs"))
      ret#))
+
+(defmacro js-literal-array [& xs]
+  (let [array-str (->> (take (count xs) (repeat "~{}"))
+                       (interpose ", ")
+                       (apply str))]
+    (apply list 'js* (str "[" array-str "]") xs)))
+
+(defmacro js-literal-map [& kvs]
+  (let [map-str (->> (take (quot (count kvs) 2) (repeat "~{}: ~{}"))
+                     (interpose ", ")
+                     (apply str))]
+    (apply list 'js* (str "{" map-str "}") kvs)))
+
+(defmacro js-literal [x]
+  (cond
+   (vector? x) `(js-literal-array
+                 ~@(map (fn [x] `(js-literal ~x))
+                        x))
+   (map? x) `(js-literal-map
+              ~@(mapcat (fn [[k v]]
+                          [`(js-literal ~k) `(js-literal ~v)])
+                        x))
+   :else x))
