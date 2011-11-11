@@ -656,7 +656,7 @@
         args (apply pfn form)
         sym (:sym args)]
     (assert (not (namespace sym)) "Can't def ns-qualified name")
-    (let [name (munge (:name (resolve-var (dissoc env :locals) sym)))
+    (let [name (munge (symbol (str (-> env :ns :name) "." (munge (str sym)))))
           init-expr (when (contains? args :init) (disallowing-recur
                                                   (analyze (assoc env :context :expr) (:init args) sym)))
           export-as (when-let [export-val (-> sym meta :export)]
