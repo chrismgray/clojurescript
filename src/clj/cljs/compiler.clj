@@ -106,7 +106,7 @@
            (symbol (str (get-in @namespaces [(-> env :ns :name) :uses sym]) "." (munge (name sym))))
 
            :else
-           (let [full-ns (if (core-name? env sym)
+           (let [full-ns (if (and (core-name? env sym) (nil? (get-in @namespaces [(-> env :ns :name) :defs sym])))
                            'cljs.core
                            (-> env :ns :name))]
              (confirm-var-exists env full-ns sym)
