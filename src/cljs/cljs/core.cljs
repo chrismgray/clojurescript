@@ -2145,6 +2145,28 @@ reduces them without incurring seq initialization"
                  _ (aset ret subidx nil)]
              ret))))
 
+(deftype ChunkedVector [vec node i offset cnt _meta]
+  ISeq
+  (-first [this]
+    (aget node offset))
+  (-rest [this]
+    (if (< (inc offset) (count node))
+      (ChunkedVector. vec node i (inc offset) cnt _meta)
+      (if (< (+ i (count node)) cnt)
+        (ChunkedVector. vec (array-for vec (+ i (count node))) (+ i (count node)) 0 cnt _meta)
+        cljs.core.List/EMPTY)))
+
+  ISeqable
+  (-seq [this] this)
+  ISequential
+  IEquiv
+  (-equiv [coll other] (equiv-sequential coll other))
+  IMeta
+  (-meta [this] _meta)
+  IWithMeta
+  (-with-meta [this m]
+    (ChunkedVector. vec node i offset cnt m)))
+
 (deftype PersistentVector [meta cnt shift root tail]
   Object
   (toString [this]
@@ -2201,14 +2223,8 @@ reduces them without incurring seq initialization"
   (-hash [coll] (hash-coll coll))
 
   ISeqable
-  (-seq [coll]
-    (when (pos? cnt)
-      (let [vector-seq
-             (fn vector-seq [i]
-               (lazy-seq
-                 (when (< i cnt)
-                   (cons (-nth coll i) (vector-seq (inc i))))))]
-        (vector-seq 0))))
+  (-seq [coll] (when (> cnt 0)
+                 (-seq (ChunkedVector. coll (array-for coll 0) 0 0 cnt {}))))
 
   ICounted
   (-count [coll] cnt)

@@ -884,6 +884,15 @@
     (assert (= 95 (peek stack1)))
     (assert (= 94 (peek stack2))))
 
+  ;; PersistentVector chunked sequences
+  (let [pv (vec (range 97))
+        pv-seq (seq pv)]
+    (assert (= 0 (first pv-seq)))
+    (loop [i 0 pv-seq pv-seq]
+      (when (< i 97)
+       (assert (= (nth pv i) (first pv-seq)))
+       (recur (inc i) (rest pv-seq)))))
+
   ;; subvec
   (let [v (vec (range 10))
         s (subvec v 2 8)]
