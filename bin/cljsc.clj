@@ -7,6 +7,7 @@
 ;   You must not remove this notice, or any other, from this software.
 
 (require '[cljs.closure :as closure])
+(require 'cljs.macros)
 
 (defn transform-cl-args
   [args]
