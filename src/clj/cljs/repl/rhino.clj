@@ -57,13 +57,16 @@
 (defn rhino-eval
   [repl-env filename line js]
   (try
+    (Context/enter (:context repl-env))
     (let [linenum (or line Integer/MIN_VALUE)]
       {:status :success
        :value (eval-result (-eval js repl-env filename linenum))})
     (catch Throwable ex
       {:status :exception
        :value (.toString ex)
-       :stacktrace (stacktrace ex)})))
+       :stacktrace (stacktrace ex)})
+    (finally
+     (Context/exit))))
 
 (defn goog-require [rule]
   (when-not (contains? @loaded-libs rule)
@@ -95,6 +98,7 @@
 (defn rhino-setup [repl-env]
   (let [env {:context :statement :locals {} :ns (@comp/namespaces comp/*cljs-ns*)}
         scope (:scope repl-env)]
+    (Context/enter (:context repl-env))
     (repl/load-file repl-env "cljs/core.cljs")
     (swap! loaded-libs conj "cljs.core")
     (repl/evaluate-form repl-env
@@ -107,7 +111,8 @@
     (repl/evaluate-form repl-env
                         env
                         "<cljs repl>"
-                        '(set! *print-fn* (fn [x] (.print js/out x))))))
+                        '(set! *print-fn* (fn [x] (.print js/out x))))
+    (Context/exit)))
 
 (extend-protocol repl/IJavaScriptEnv
   clojure.lang.IPersistentMap
