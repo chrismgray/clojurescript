@@ -617,7 +617,7 @@
 
 (declare analyze analyze-symbol analyze-seq)
 
-(def specials '#{if def fn* do let* loop* throw try* recur new set! ns deftype* defrecord* . js* & quote})
+(def specials '#{if def fn* do let* loop* throw try* recur new set! ns deftype* defrecord* . js* & quote defmacro})
 
 (def ^:dynamic *recur-frames* nil)
 (def ^:dynamic *loop-lets* nil)
@@ -1127,25 +1127,45 @@
          :meta meta-expr :expr expr})
       expr)))
 
-(defn analyze
+(defmulti analyze
   "Given an environment, a map containing {:locals (mapping of names to bindings), :context
   (one of :statement, :expr, :return), :ns (a symbol naming the
   compilation ns)}, and form, returns an expression object (a map
   containing at least :form, :op and :env keys). If expr has any (immediately)
   nested exprs, must have :children [exprs...] entry. This will
   facilitate code walking without knowing the details of the op set."
-  ([env form] (analyze env form nil))
-  ([env form name]
-     (let [form (if (instance? clojure.lang.LazySeq form)
-                  (or (seq form) ())
-                  form)]
-       (cond
-        (symbol? form) (analyze-symbol env form)
-        (and (seq? form) (seq form)) (analyze-seq env form name)
-        (map? form) (analyze-map env form name)
-        (vector? form) (analyze-vector env form name)
-        (set? form) (analyze-set env form name)
-        :else {:op :constant :env env :form form}))))
+  (fn [env form & [name]]
+    (cond
+     (symbol? form) :symbol
+     (and (seq? form) (seq form)) :seq
+     (map? form) :map
+     (vector? form) :vector
+     (set? form) :set
+     :else :default)))
+
+(defmethod analyze :default
+  [env form & [name]]
+  {:op :constant :env env :form form})
+
+(defmethod analyze :symbol
+  [env form & [name]]
+  (analyze-symbol env form))
+
+(defmethod analyze :seq
+  [env form & [name]]
+  (analyze-seq env form name))
+
+(defmethod analyze :map
+  [env form & [name]]
+  (analyze-map env form name))
+
+(defmethod analyze :vector
+  [env form & [name]]
+  (analyze-vector env form name))
+
+(defmethod analyze :set
+  [env form & [name]]
+  (analyze-set env form name))
 
 (defn analyze-file
   [f]
