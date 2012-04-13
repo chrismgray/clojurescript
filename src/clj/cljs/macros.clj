@@ -7,18 +7,23 @@
   (:use [cljs.compiler :as compiler :exclude [macroexpand-1]]))
 
 (def repl-env (rhino/repl-env))
-(binding [compiler/*cljs-ns* 'cljs.user]
- (repl/-setup repl-env))
+(binding [compiler/*cljs-ns* 'cljs.core]
+  (repl/-setup repl-env))
 
 (defn- eval-analyzed
   [analyzed-form]
-  (let [js (compiler/emits analyzed-form)]
+  (let [js (compiler/emits analyzed-form)
+        res (repl/-evaluate repl-env nil nil js)]
     (when repl/*cljs-verbose*
       (println js))
-    (:value (repl/-evaluate repl-env nil nil js))))
+    (when (:stacktrace res)
+      (binding [*out* *err*]
+        (println (:value res))
+        (println (:stacktrace res))))
+    (:value res)))
 
 ;; Get the compiler's def method because we are about to override it.
-(def compiler-parse-def (get-method compiler/parse 'def))
+(defonce compiler-parse-def (get-method compiler/parse 'def))
 ;; Override the compiler's def method so that it evaluates the new definition.
 (defmethod compiler/parse 'def
   [op env form name]
@@ -26,23 +31,39 @@
         eval-res (eval-analyzed res)]
     res))
 
-(def macros (atom {}))
+;; Do the same thing for namespaces
+(defonce compiler-parse-ns (get-method compiler/parse 'ns))
+(defmethod compiler/parse 'ns
+  [op env form name]
+  (let [res (compiler-parse-ns op env form name)
+        eval-res (eval-analyzed res)]
+    res))
 
 (defmethod compiler/parse 'defmacro
   [op env [_ mac-name & mac-body :as form] name]
   (let [mac-fun-name (symbol (gensym mac-name))]
-    ;; Will recursive macros work? Probably not yet.
-    ;; TODO: Properly namespace macros
-    (swap! macros assoc (symbol mac-name) mac-fun-name)
+    (swap! namespaces assoc-in [(-> env :ns :name) :defs (symbol mac-name) :macro] mac-fun-name)
     (eval-analyzed (compiler/analyze env (concat (list 'defn mac-fun-name) mac-body)))
     {:env env :op :constant :form ()}))
+
+(defn- resolve-macro
+  "Return the function implementing the macro in the current
+   environment if it exists, `nil` otherwise."
+  [sym env]
+  (when-not (-> env :locals sym)
+    (if-let [nstr (namespace sym)]
+      (let [full-ns (resolve-ns-alias env (symbol nstr))
+            s (-> sym name symbol)
+            macro-fun (get-in @namespaces [full-ns :defs s :macro])]
+        (get-in @namespaces [full-ns :defs macro-fun :name]))
+      (get-in @namespaces [(-> env :ns :name) :defs sym :macro]))))
 
 (defn macroexpand-1 [env form]
   (let [op (first form)]
     (if (specials op)
       form
-      (if-let [mac (and (symbol? op) (get @macros op))]
-        (eval-analyzed (analyze env (list 'str (concat (list mac) (map #(list 'quote %) (rest form)))) nil))
+      (if-let [mac (and (symbol? op) (resolve-macro op env))]
+        (eval-analyzed (analyze (assoc env :context :statement) (list 'str (concat (list mac) (map #(list 'quote %) (rest form)))) nil))
        (if-let [mac (and (symbol? op) (get-expander op env))]
          (apply mac form env (rest form))
          (if (symbol? op)
