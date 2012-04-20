@@ -1180,7 +1180,7 @@
           (loop [r (read pbr false eof false)]
             (let [env (assoc env :ns (@namespaces *cljs-ns*))]
               (when-not (identical? eof r)
-                (analyze env r)
+                (analyze env r nil true)
                 (recur (read pbr false eof false))))))))))
 
 (defn forms-seq
@@ -1221,7 +1221,7 @@
                deps nil]
           (if (seq forms)
             (let [env {:ns (@namespaces *cljs-ns*) :context :statement :locals {}}
-                  ast (analyze env (first forms))]
+                  ast (analyze env (first forms) nil true)]
               (do (emit ast)
                   (if (= (:op ast) :ns)
                     (recur (rest forms) (:name ast) (merge (:uses ast) (:requires ast)))
