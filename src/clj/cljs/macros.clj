@@ -23,57 +23,6 @@
         (println (:stacktrace res))))
     (:value res)))
 
-;; Get the compiler's def method because we are about to override it.
-;; (defonce compiler-parse-def (get-method compiler/parse 'def))
-;; ;; Override the compiler's def method so that it evaluates the new definition.
-;; (defmethod compiler/parse 'def
-;;   [op env form name]
-;;   (let [res (compiler-parse-def op env form name)
-;;         eval-res (eval-analyzed res)]
-;;     res))
-
-;; ;; Do the same thing for namespaces
-;; (defonce compiler-parse-ns (get-method compiler/parse 'ns))
-;; (defmethod compiler/parse 'ns
-;;   [op env form name]
-;;   (let [res (compiler-parse-ns op env form name)
-;;         eval-res (eval-analyzed res)]
-;;     res))
-
-;; ;; Do the same thing for deftype
-;; (defonce compiler-parse-deftype* (get-method compiler/parse 'deftype*))
-;; (defmethod compiler/parse 'deftype*
-;;   [op env form name]
-;;   (let [res (compiler-parse-deftype* op env form name)
-;;         eval-res (eval-analyzed res)]
-;;     res))
-
-;; ;; Do the same thing for defrecord
-;; (defonce compiler-parse-defrecord* (get-method compiler/parse 'defrecord*))
-;; (defmethod compiler/parse 'defrecord*
-;;   [op env form name]
-;;   (let [res (compiler-parse-defrecord* op env form name)
-;;         eval-res (eval-analyzed res)]
-;;     res))
-
-;; ;; Do the same thing for js
-;; (defonce compiler-parse-js* (get-method compiler/parse 'js*))
-;; (defmethod compiler/parse 'js*
-;;   [op env form name]
-;;   (let [res (compiler-parse-js* op env form name)
-;;         eval-res (eval-analyzed res)]
-;;     res))
-
-;; ;; Do the same thing for set!
-;; (defonce compiler-parse-set! (get-method compiler/parse 'set!))
-;; (defmethod compiler/parse 'set!
-;;   [op env form name]
-;;   (let [res (compiler-parse-set! op env form name)
-;;         eval-res (eval-analyzed res)]
-;;     res))
-
-;; TODO: put the above in a macro :)
-
 (defmethod compiler/parse 'defmacro
   [op env [_ mac-name & mac-body :as form] name]
   (let [mac-fun-name (symbol (gensym mac-name))]
