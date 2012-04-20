@@ -13,7 +13,7 @@
 (defn- eval-analyzed
   [analyzed-form]
   (let [js (compiler/emits analyzed-form)
-        res (repl/-evaluate repl-env nil nil js)]
+        res (binding [*out* (java.io.StringWriter.)] (repl/-evaluate repl-env nil nil js))]
     (when repl/*cljs-verbose*
       (binding [*out* *err*]
        (println js)))
@@ -80,46 +80,4 @@
           :else
           (analyze env mform name top-level-form?))))))
 
-(comment
-  (binding [repl/*cljs-verbose* true
-          compiler/*cljs-ns* 'cljs.user]
- (let [repl-env (rhino/repl-env)
-       file "<cljs repl>"]
-   (repl/-setup repl-env)
-   (repl/evaluate-form repl-env envy file '(ns cljs.user))
-   (repl/evaluate-form repl-env envy file '(defn foo [x] (inc x)))
-   (repl/evaluate-form repl-env envx file '(foo 2))))
 
-  (def envx {:ns (@namespaces 'cljs.user) :context :expr :locals {}})
-  (analyze envx '(defn foo [] (+ 1 1)))
-  (swap! namespaces assoc 'cljs.foo {})
-  (def envy {:ns (assoc (@namespaces 'cljs.foo) :requires {'user 'cljs.user}) :context :statement :locals '{ethel {:name ethel__123 :init nil}}})
-  (resolve-ns-alias envy 'user)
-  (resolve-macro 'user/unless envy)
-  (resolve-ns-alias envy (symbol (namespace 'user/unless)))
-(binding [repl/*cljs-verbose* true]
-  (eval-analyzed (compiler/analyze envy '(defmacro reverse-forms [x y] `(~y ~x)))))
-@namespaces
-(binding [repl/*cljs-verbose* true]
-  (eval-analyzed (compiler/analyze envx '(defmacro unless [pred & body] `(if (not ~pred) (do ~@body) nil)))))
-(eval-analyzed (analyze envy '(defmacro when [pred body] 1)))
-(eval-analyzed (compiler/analyze envy '(defn foo [x] (+ x 1))))
-(eval-analyzed (compiler/analyze envy '(foo 3)))
-(repl/evaluate-form repl-env envx nil '(+ 1 1))
-(repl/evaluate-form repl-env envx nil '(defn foo [x] (+ x 1)))
-(repl/evaluate-form repl-env envx nil '(foo 2))
-(repl/evaluate-form repl-env envx nil '(foobar 2))
-(repl/evaluate-form repl-env envx nil 'nil)
-(binding [repl/*cljs-verbose* true]
-  (eval-analyzed (analyze envx '(defmacro bar [x] (if (= 0 x) x `(cljs.user/bar ~(dec x)))))))
-(binding [repl/*cljs-verbose* true]
-  (eval-analyzed (analyze envx '(bar 3))))
-(binding [repl/*cljs-verbose* true]
-  (eval-analyzed (analyze envx '(reverse-forms 1 +))))
-(binding [repl/*cljs-verbose* true]
-  (eval-analyzed (analyze envy '(user/unless false (+ 1 1)))))
-(binding [repl/*cljs-verbose* true]
-  (repl/evaluate-form repl-env envx nil '(reverse-forms 1 +)))
-(eval-analyzed (analyze envx '(when true 2)))
-(rhino/rhino-eval repl-env nil nil "cljs.core.str(cljs.core.list.call(null,1,2))")
-)

@@ -4,7 +4,8 @@
             [cljs.binding-test :as binding-test]
             [cljs.ns-test :as ns-test]
             [clojure.string-test :as string-test]
-            [cljs.macro-test :as macro-test]))
+            [cljs.macro-test :as macro-test]
+            [cljs.defmacro-test :as defmacro-test]))
 
 (set! *print-fn* js/print)
 
@@ -14,6 +15,7 @@
 (binding-test/test-binding)
 (ns-test/test-ns)
 (macro-test/test-macros)
+(defmacro-test/test-macros)
 
 (println "Tests completed without exception")
 

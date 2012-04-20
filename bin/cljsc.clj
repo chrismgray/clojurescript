@@ -7,7 +7,6 @@
 ;   You must not remove this notice, or any other, from this software.
 
 (require '[cljs.closure :as closure])
-(require 'cljs.macros)
 
 (defn transform-cl-args
   [args]
@@ -19,4 +18,6 @@
     {:source source :options (merge {:output-to :print} options)}))
 
 (let [args (transform-cl-args *command-line-args*)]
+  (when (-> args :options :macros)
+    (require 'cljs.macros))
   (closure/build (:source args) (:options args)))
