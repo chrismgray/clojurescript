@@ -1,6 +1,7 @@
 (ns cljs.defmacro-test
   (:require [cljs.macro-test.macros-2 :as mac2]
-            [cljs.macro-test.macros-3 :as mac3]))
+            [cljs.macro-test.macros-3 :as mac3])
+  (:use [cljs.macro-test.macros-4 :only [bar]]))
 
 (defmacro foo [a b]
   `(+ ~a ~b))
@@ -30,6 +31,10 @@
   [y]
   (mac3/bar y))
 
+(defn bar-test-3
+  [y]
+  (bar y))
+
 (defmacro retain-meta-inf
   [x]
   (meta x))
@@ -43,5 +48,5 @@
   (assert (= 2 (bar-test-2 true)))
   (assert (= 1 (bar-test-2 false)))
   (assert (= (:line (retain-meta-inf (+ 1 1))) (:line (meta '(+ 1 1)))))
-  
-  )
+  (assert (= 3 (bar-test-3 true)))
+  (assert (= 4 (bar-test-3 false))))

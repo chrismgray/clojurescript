@@ -40,7 +40,12 @@
             s (-> sym name symbol)
             macro-fun (get-in @namespaces [full-ns :defs s :macro])]
         (get-in @namespaces [full-ns :defs macro-fun :name]))
-      (get-in @namespaces [(-> env :ns :name) :defs sym :macro]))))
+      (if-let [nstr (get-in @namespaces [(-> env :ns :name) :uses sym])]
+        (let [full-ns (symbol nstr)
+              s (-> sym name symbol)
+              macro-fun (get-in @namespaces [full-ns :defs s :macro])]
+          (get-in @namespaces [full-ns :defs macro-fun :name]))
+       (get-in @namespaces [(-> env :ns :name) :defs sym :macro])))))
 
 (defn macroexpand-1 [env form]
   (let [op (first form)]
@@ -79,5 +84,4 @@
             (parse-invoke env form))
           :else
           (analyze env mform name top-level-form?))))))
-
 
