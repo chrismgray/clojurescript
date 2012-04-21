@@ -10,14 +10,14 @@
 ;; the recur call.  They are not passed implicitly in CLJS (yet).  I
 ;; wonder if they should be.
 (defmacro rec-macro-1
-  "The same as above, but with recur instead of a recursive call."
+  "Test recursion in macros."
   [a]
   (if (= 0 a)
     a
     (recur (dec a))))
 
 (defmacro rec-macro-2
-  "The same again, but putting the recursive call in the output."
+  "The same as rec-macro-1, but putting the recursive call in the output."
   [a]
   (if (= 0 a)
     a
